@@ -27,11 +27,15 @@ blogsRouter.get('/:id', (request, response, next) => {
 blogsRouter.post('/', (request, response, next) => {
   const body = request.body;
 
+  if (!body.title || !body.url) {
+    return response.status(400).json({ error: 'Title and url are required' });
+  }
+
   const blog = new Blog({
-      title: body.tile,
+      title: body.title,
       author: body.author,
       url: body.url,
-      likes: body.likes
+      likes: body.likes !== undefined ? body.likes : 0,
   })
 
   blog.save()
