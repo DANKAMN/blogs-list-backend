@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "supervisor index.js"
+    "start": "supervisor index.js",
+    "test": "jest --verbose"
   },
   "author": "Daniel Kamsiyochukwu Nicholas",
   "license": "ISC",
@@ -16,5 +17,8 @@
     "mongodb": "^6.3.0",
     "mongoose": "^8.0.1",
     "supervisor": "^0.12.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
   }
 }
