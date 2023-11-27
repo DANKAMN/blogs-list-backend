@@ -1,13 +1,12 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
+const User = require('../models/user')
+const jwt = require('jsonwebtoken')
 
 /*Read all blogs */
-blogsRouter.get('/', (request, response, next) => {
-    Blog.find({})
-      .then(blogs => {
-        response.json(blogs)
-      })
-      .catch(error => next(error))
+blogsRouter.get('/', async (request, response, next) => {
+  const blogs = await Blog.find({}).populate('user', { username: 1, name: 1})
+    response.json(blogs)
 })
 
 /*Read a specific blog */
@@ -24,25 +23,38 @@ blogsRouter.get('/:id', (request, response, next) => {
 })
 
 /*Post a blog */
-blogsRouter.post('/', (request, response, next) => {
-  const body = request.body;
+const getTokenFrom = request => {
+  const authorization = request.get('authorization')
+  if (authorization && authorization.startsWith('Bearer ')) {
+    return authorization.replace('Bearer ', '')
+  }
+  return null
+}
 
-  if (!body.title || !body.url) {
-    return response.status(400).json({ error: 'Title and url are required' });
+blogsRouter.post('/', async (request, response, next) => {
+  const body = request.body
+
+  const decodedToken = jwt.verify(getTokenFrom(request), process.env.SECRET)
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: 'token invalid' })
   }
 
+  const user = await User.findById(decodedToken.id)
+
   const blog = new Blog({
-      title: body.title,
-      author: body.author,
-      url: body.url,
-      likes: body.likes !== undefined ? body.likes : 0,
+    title: body.title,
+    author: body.author,
+    url: body.url,
+    likes: body.likes !== undefined ? body.likes : 0,
+    user: user.id
   })
 
-  blog.save()
-    .then(result => {
-      response.status(201).json(result)
-    })
-    .catch(error => next(error))
+
+  const savedBlog = await blog.save()
+  user.blogs = user.blogs.concat(savedBlog._id)
+  await user.save()
+
+  response.status(201).json(savedBlog)
 })
 
 module.exports = blogsRouter
